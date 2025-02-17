@@ -1,101 +1,122 @@
-import Image from "next/image";
+"use client";
+
+import { useState } from "react";
+import AceEditor from "react-ace";
+import axios from "axios";
+import ReactMarkdown from "react-markdown";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
+
+// Ace Editor imports
+import "ace-builds/src-noconflict/mode-typescript";
+import "ace-builds/src-noconflict/theme-dracula";
+import "ace-builds/src-noconflict/ext-language_tools";
+
+// TypeScript type for error response
+type ErrorResponse = {
+    message?: string;
+};
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    const [code, setCode] = useState<string>("");
+    const [analysis, setAnalysis] = useState<string | null>(null);
+    const [loading, setLoading] = useState(false);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    const validateCode = (code: string): boolean => {
+        if (!code.trim()) {
+            toast.error("Please enter TypeScript code to analyze");
+            return false;
+        }
+
+        if (code.length > 10000) {
+            toast.error("Code exceeds maximum length of 10,000 characters");
+            return false;
+        }
+
+        return true;
+    };
+
+    const handleAnalyze = async () => {
+        if (!validateCode(code)) return;
+
+        setLoading(true);
+        setAnalysis(null);
+
+        try {
+            console.log("API called");
+
+            const response = await axios.post(
+                "https://tsguardianbackend.onrender.com/analyze-code",
+                { code }
+            );
+
+            // Improved type checking for response
+            const analysisText = response.data?.analysis?.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (typeof analysisText === "string") {
+                setAnalysis(analysisText);
+            } else {
+                throw new Error("Invalid analysis response format");
+            }
+        } catch (error) {
+            console.error("Analysis error:", error);
+
+            if (axios.isAxiosError<ErrorResponse>(error)) {
+                const serverMessage = error.response?.data?.message;
+                toast.error(serverMessage || "Code analysis failed. Please try again.");
+            } else if (error instanceof Error) {
+                toast.error(error.message);
+            } else {
+                toast.error("An unexpected error occurred");
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="flex min-h-screen p-6 bg-gray-900 text-white">
+            <div className="w-1/2 p-4">
+                <h2 className="text-xl font-bold mb-2 text-white">TypeScript Code Editor</h2>
+                <AceEditor
+                    mode="typescript"
+                    theme="dracula"
+                    value={code}
+                    onChange={setCode}
+                    fontSize={16}
+                    width="100%"
+                    height="70%"
+                    className="rounded-lg border border-gray-700"
+                    setOptions={{
+                        enableBasicAutocompletion: true,
+                        enableLiveAutocompletion: true,
+                        showLineNumbers: true,
+                        tabSize: 2,
+                    }}
+                />
+                <Button 
+                    className="mt-4 w-full bg-blue-500 hover:bg-blue-600" 
+                    onClick={handleAnalyze} 
+                    disabled={loading}
+                >
+                    {loading ? "Analyzing..." : "Optimize & Analyze"}
+                </Button>
+            </div>
+
+            <div className="w-1/2 p-4">
+                <h2 className="text-xl font-bold mb-2 text-white">AI Analysis Result</h2>
+                <Card className="p-4 bg-white border border-blue-500">
+                    <CardContent className="prose max-h-[500px] overflow-y-auto text-blue-700">
+                        {analysis ? (
+                            <ReactMarkdown>{analysis}</ReactMarkdown>
+                        ) : (
+                            <p className="text-blue-700">
+                                {loading ? "Analyzing your code..." : "Analysis results will appear here"}
+                            </p>
+                        )}
+                    </CardContent>
+                </Card>
+            </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+    );
 }
