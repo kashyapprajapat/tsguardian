@@ -29,7 +29,15 @@ TSGuardian – Your AI-Powered TypeScript Code Analyst Agent🚀.
 - **Tailwind CSS** (Styling)
 - **Sonner** (Notifications)
 
-## 📸 Screenshots
+### 📸 Screenshots
+![Macbook-Air-tsguardian vercel app](https://github.com/user-attachments/assets/8d133329-555b-47a0-a221-ecb02d533b69)
+
+## Suggested Fixces
+![Macbook-Air-tsguardian vercel app (1)](https://github.com/user-attachments/assets/9aafc093-b917-4f51-9437-550c94ec1d4c)
+
+## ReFactore
+![Macbook-Air-tsguardian vercel app (2)](https://github.com/user-attachments/assets/011e4852-ee3c-4ced-99bb-5b6e9391ce7e)
+
 
 
 ## 🏗️ Installation & Setup
