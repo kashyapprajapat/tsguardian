@@ -6,7 +6,7 @@ import axios from "axios";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { toast } from "sonner";
+import { Toaster, toast } from 'sonner'
 
 // Ace Editor imports
 import "ace-builds/src-noconflict/mode-typescript";
@@ -24,6 +24,10 @@ export default function Home() {
     const [loading, setLoading] = useState(false);
 
     const validateCode = (code: string): boolean => {
+        if(!code){
+            toast.error('Please enter TypeScript code to analyze');
+            return false;
+        }
         if (!code.trim()) {
             toast.error("Please enter TypeScript code to analyze");
             return false;
@@ -85,7 +89,7 @@ export default function Home() {
                     onChange={setCode}
                     fontSize={16}
                     width="100%"
-                    height="70%"
+                    height="70vh"
                     className="rounded-lg border border-gray-700"
                     setOptions={{
                         enableBasicAutocompletion: true,
@@ -94,6 +98,7 @@ export default function Home() {
                         tabSize: 2,
                     }}
                 />
+                <Toaster position="bottom-left"/>
                 <Button 
                     className="mt-4 w-full bg-blue-500 hover:bg-blue-600" 
                     onClick={handleAnalyze} 
@@ -105,19 +110,24 @@ export default function Home() {
 
             <div className="w-1/2 p-4">
                 <h2 className="text-xl font-bold mb-2 text-white">AI Analysis Result</h2>
-                <Card className="p-4 bg-white border border-blue-500">
-                    <CardContent className="prose max-h-[500px] overflow-y-auto text-blue-700">
-                        {analysis ? (
-                            <ReactMarkdown>{analysis}</ReactMarkdown>
-                        ) : (
-                            <p className="text-blue-700">
-                                {loading ? "Analyzing your code..." : "Analysis results will appear here"}
-                            </p>
-                        )}
+                <Card className="bg-white border border-blue-500 h-[70vh] relative">
+                    <CardContent className="absolute inset-0 p-6 overflow-y-auto overflow-x-hidden">
+                        <div className="prose prose-sm text-blue-700">
+                            {analysis ? (
+                                <ReactMarkdown 
+                                    className="[&_pre]:whitespace-pre-wrap [&_pre]:break-words"
+                                >
+                                    {analysis}
+                                </ReactMarkdown>
+                            ) : (
+                                <p className="text-blue-700">
+                                    {loading ? "Analyzing your code..." : "Analysis results will appear here"}
+                                </p>
+                            )}
+                        </div>
                     </CardContent>
                 </Card>
             </div>
         </div>
     );
 }
-
