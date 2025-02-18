@@ -7,29 +7,29 @@ import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Toaster, toast } from 'sonner';
-import { Copy } from "lucide-react";
+import { Copy, RefreshCw } from "lucide-react";
 
 // Ace Editor imports
 import "ace-builds/src-noconflict/mode-typescript";
 import "ace-builds/src-noconflict/theme-dracula";
 import "ace-builds/src-noconflict/ext-language_tools";
 
+type CodeBlockProps = {
+    children: string | string[];
+    className?: string;
+    onRefactor?: (code: string) => void;
+};
 
 type ErrorResponse = {
     message?: string;
 };
 
-type CodeBlockProps = {
-    children: string | string[];
-    className?: string;
-};
-
-const CodeBlock = ({ children, className }: CodeBlockProps)=> {
+const CodeBlock = ({ children, className, onRefactor }: CodeBlockProps) => {
     const codeString = typeof children === 'string' 
-    ? children.trim()
-    : Array.isArray(children) 
-        ? (children as string[]).join('').trim()
-        : '';
+        ? children.trim()
+        : Array.isArray(children) 
+            ? (children as string[]).join('').trim()
+            : '';
 
     const handleCopy = () => {
         if (!codeString) {
@@ -37,7 +37,6 @@ const CodeBlock = ({ children, className }: CodeBlockProps)=> {
             return;
         }
 
-        // Create a temporary textarea element
         const textarea = document.createElement('textarea');
         textarea.value = codeString;
         textarea.style.position = 'fixed';
@@ -45,7 +44,6 @@ const CodeBlock = ({ children, className }: CodeBlockProps)=> {
         document.body.appendChild(textarea);
 
         try {
-            // Select and copy the text
             textarea.select();
             document.execCommand('copy');
             toast.success("Code copied to clipboard!");
@@ -53,8 +51,14 @@ const CodeBlock = ({ children, className }: CodeBlockProps)=> {
             toast.error("Failed to copy code");
             console.error('Copy failed:', err);
         } finally {
-            // Clean up
             document.body.removeChild(textarea);
+        }
+    };
+
+    const handleRefactor = () => {
+        if (onRefactor && codeString) {
+            onRefactor(codeString);
+            toast.success("Code updated in editor!");
         }
     };
 
@@ -65,14 +69,28 @@ const CodeBlock = ({ children, className }: CodeBlockProps)=> {
             <div className="bg-gray-800 rounded-lg overflow-hidden">
                 <div className="flex justify-between items-center px-4 py-2 bg-gray-700">
                     <span className="text-xs text-gray-300">{language}</span>
-                    <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-8 w-8 p-0 hover:bg-gray-600"
-                        onClick={handleCopy}
-                    >
-                        <Copy className="h-4 w-4 text-gray-300" />
-                    </Button>
+                    <div className="flex gap-2">
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-8 w-8 p-0 hover:bg-gray-600"
+                            onClick={handleCopy}
+                            title="Copy code"
+                        >
+                            <Copy className="h-4 w-4 text-gray-300" />
+                        </Button>
+                        {onRefactor && (
+                            <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="h-8 w-8 p-0 hover:bg-gray-600"
+                                onClick={handleRefactor}
+                                title="Update editor with this code"
+                            >
+                                <RefreshCw className="h-4 w-4 text-gray-300" />
+                            </Button>
+                        )}
+                    </div>
                 </div>
                 <pre className="p-4 m-0 overflow-x-auto">
                     <code className="text-sm font-mono text-white">{codeString}</code>
@@ -139,6 +157,10 @@ export default function Home() {
         }
     };
 
+    const handleRefactor = (newCode: string) => {
+        setCode(newCode);
+    };
+
     return (
         <div className="flex min-h-screen p-6 bg-gray-900 text-white">
             <div className="w-1/2 p-4">
@@ -178,7 +200,12 @@ export default function Home() {
                                 <ReactMarkdown
                                     components={{
                                         code: ({ children, className }) => (
-                                            <CodeBlock className={className}>{children as string}</CodeBlock>
+                                            <CodeBlock 
+                                                className={className}
+                                                onRefactor={handleRefactor}
+                                            >
+                                                {children as string}
+                                            </CodeBlock>
                                         ),
                                         pre: ({ children }) => <>{children}</>,
                                         p: ({ children }) => <p className="mb-4">{children}</p>,
