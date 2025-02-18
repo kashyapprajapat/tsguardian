@@ -14,18 +14,22 @@ import "ace-builds/src-noconflict/mode-typescript";
 import "ace-builds/src-noconflict/theme-dracula";
 import "ace-builds/src-noconflict/ext-language_tools";
 
-// TypeScript type for error response
+
 type ErrorResponse = {
     message?: string;
 };
 
-const CodeBlock = ({ children, className }: { children: string; className?: string }) => {
-    // Clean up the code string by removing extra newlines and spaces
+type CodeBlockProps = {
+    children: string | string[];
+    className?: string;
+};
+
+const CodeBlock = ({ children, className }: CodeBlockProps)=> {
     const codeString = typeof children === 'string' 
-        ? children.trim()
-        : Array.isArray(children) 
-            ? children.join('').trim()
-            : '';
+    ? children.trim()
+    : Array.isArray(children) 
+        ? (children as string[]).join('').trim()
+        : '';
 
     const handleCopy = () => {
         if (!codeString) {
