@@ -14,112 +14,20 @@ import "ace-builds/src-noconflict/mode-typescript";
 import "ace-builds/src-noconflict/theme-dracula";
 import "ace-builds/src-noconflict/ext-language_tools";
 
-type CodeBlockProps = {
-    children: string | string[];
-    className?: string;
-    onRefactor?: (code: string) => void;
-};
-
-type ErrorResponse = {
-    message?: string;
-};
-
-const CodeBlock = ({ children, className, onRefactor }: CodeBlockProps) => {
-    const codeString = typeof children === 'string' 
-        ? children.trim()
-        : Array.isArray(children) 
-            ? (children as string[]).join('').trim()
-            : '';
-
-    const handleCopy = () => {
-        if (!codeString) {
-            toast.error("No code to copy");
-            return;
-        }
-
-        const textarea = document.createElement('textarea');
-        textarea.value = codeString;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-
-        try {
-            textarea.select();
-            document.execCommand('copy');
-            toast.success("Code copied to clipboard!");
-        } catch (err) {
-            toast.error("Failed to copy code");
-            console.error('Copy failed:', err);
-        } finally {
-            document.body.removeChild(textarea);
-        }
-    };
-
-    const handleRefactor = () => {
-        if (onRefactor && codeString) {
-            onRefactor(codeString);
-            toast.success("Code updated in editor!");
-        }
-    };
-
-    const language = className?.replace(/language-/, '') || 'typescript';
-
-    return (
-        <div className="relative group my-4">
-            <div className="bg-gray-800 rounded-lg overflow-hidden">
-                <div className="flex justify-between items-center px-4 py-2 bg-gray-700">
-                    <span className="text-xs text-gray-300">{language}</span>
-                    <div className="flex gap-2">
-                        <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="h-8 w-8 p-0 hover:bg-gray-600"
-                            onClick={handleCopy}
-                            title="Copy code"
-                        >
-                            <Copy className="h-4 w-4 text-gray-300" />
-                        </Button>
-                        {onRefactor && (
-                            <Button 
-                                variant="ghost" 
-                                size="sm" 
-                                className="h-8 w-8 p-0 hover:bg-gray-600"
-                                onClick={handleRefactor}
-                                title="Update editor with this code"
-                            >
-                                <RefreshCw className="h-4 w-4 text-gray-300" />
-                            </Button>
-                        )}
-                    </div>
-                </div>
-                <pre className="p-4 m-0 overflow-x-auto">
-                    <code className="text-sm font-mono text-white">{codeString}</code>
-                </pre>
-            </div>
-        </div>
-    );
-};
-
 export default function Home() {
     const [code, setCode] = useState<string>("");
     const [analysis, setAnalysis] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
     const validateCode = (code: string): boolean => {
-        if(!code){
-            toast.error('Please enter TypeScript code to analyze');
-            return false;
-        }
         if (!code.trim()) {
             toast.error("Please enter TypeScript code to analyze");
             return false;
         }
-
         if (code.length > 10000) {
             toast.error("Code exceeds maximum length of 10,000 characters");
             return false;
         }
-
         return true;
     };
 
@@ -143,28 +51,17 @@ export default function Home() {
             }
         } catch (error) {
             console.error("Analysis error:", error);
-
-            if (axios.isAxiosError<ErrorResponse>(error)) {
-                const serverMessage = error.response?.data?.message;
-                toast.error(serverMessage || "Code analysis failed. Please try again.");
-            } else if (error instanceof Error) {
-                toast.error(error.message);
-            } else {
-                toast.error("An unexpected error occurred");
-            }
+            toast.error("Code analysis failed. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
-    const handleRefactor = (newCode: string) => {
-        setCode(newCode);
-    };
-
     return (
-        <div className="flex min-h-screen p-6 bg-gray-900 text-white">
-            <div className="w-1/2 p-4">
-                <h2 className="text-xl font-bold mb-2 text-white">TypeScript Code Editor</h2>
+        <div className="flex flex-col md:flex-row min-h-screen p-4 bg-gray-900 text-white gap-4">
+            {/* Code Editor Section */}
+            <div className="w-full md:w-1/2 p-4">
+                <h2 className="text-xl font-bold mb-2">TypeScript Code Editor</h2>
                 <AceEditor
                     mode="typescript"
                     theme="dracula"
@@ -172,7 +69,7 @@ export default function Home() {
                     onChange={setCode}
                     fontSize={16}
                     width="100%"
-                    height="70vh"
+                    height="50vh"
                     className="rounded-lg border border-gray-700"
                     setOptions={{
                         enableBasicAutocompletion: true,
@@ -181,7 +78,7 @@ export default function Home() {
                         tabSize: 2,
                     }}
                 />
-                <Toaster position="bottom-left"/>
+                <Toaster position="bottom-left" />
                 <Button 
                     className="mt-4 w-full bg-blue-500 hover:bg-blue-600" 
                     onClick={handleAnalyze} 
@@ -191,33 +88,14 @@ export default function Home() {
                 </Button>
             </div>
 
-            <div className="w-1/2 p-4">
-                <h2 className="text-xl font-bold mb-2 text-white">AI Analysis Result</h2>
-                <Card className="bg-white border border-blue-500 h-[70vh] relative">
-                    <CardContent className="absolute inset-0 p-6 overflow-y-auto overflow-x-hidden">
+            {/* Analysis Result Section */}
+            <div className="w-full md:w-1/2 p-4">
+                <h2 className="text-xl font-bold mb-2">AI Analysis Result</h2>
+                <Card className="bg-white border border-blue-500 min-h-[50vh]">
+                    <CardContent className="p-6 overflow-y-auto">
                         <div className="prose prose-sm text-blue-700 max-w-none">
                             {analysis ? (
-                                <ReactMarkdown
-                                    components={{
-                                        code: ({ children, className }) => (
-                                            <CodeBlock 
-                                                className={className}
-                                                onRefactor={handleRefactor}
-                                            >
-                                                {children as string}
-                                            </CodeBlock>
-                                        ),
-                                        pre: ({ children }) => <>{children}</>,
-                                        p: ({ children }) => <p className="mb-4">{children}</p>,
-                                        h1: ({ children }) => <h1 className="text-xl font-bold mb-4">{children}</h1>,
-                                        h2: ({ children }) => <h2 className="text-lg font-bold mb-3">{children}</h2>,
-                                        ul: ({ children }) => <ul className="list-disc pl-6 mb-4">{children}</ul>,
-                                        li: ({ children }) => <li className="mb-2">{children}</li>,
-                                        strong: ({ children }) => <strong className="font-bold text-blue-800">{children}</strong>,
-                                    }}
-                                >
-                                    {analysis}
-                                </ReactMarkdown>
+                                <ReactMarkdown>{analysis}</ReactMarkdown>
                             ) : (
                                 <p className="text-blue-700">
                                     {loading ? "Analyzing your code..." : "Analysis results will appear here"}
